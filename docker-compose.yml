@@ -1,0 +1,83 @@
+# https://medium.com/@william.macedo/how-to-deploy-an-open-source-intercom-application-using-docker-and-aws-56df7331d748
+
+networks:
+  my-intercom-network:
+    ipam:
+      config:
+        - subnet: 172.27.0.0/24
+services:
+  manager:
+    # image: eyevinntechnology/intercom-manager:v3.5.3
+    image: eyevinntechnology/intercom-manager:v3.1.0
+    # container_name: intercom-manager
+    environment:
+      - CORS_ORIGIN=*
+      - SMB_ADDRESS=http://172.27.0.2:8081
+      - MONGODB_CONNECTION_STRING=mongodb://172.27.0.5:27017/intercom-manager
+      - PORT=8000
+    ports:
+      - "9000:8000"
+    # links:
+    #   - mongo
+    #   - smb 
+    networks:
+      my-intercom-network:
+        ipv4_address: 172.27.0.3
+
+  frontend:
+    # image: eyevinntechnology/intercom-frontend:v3.6.0
+    image: eyevinntechnology/intercom-frontend:v3.1.0
+    # container_name: intercom-frontend
+    # restart: unless-stopped
+    environment:
+      # - MANAGER_URL=http://localhost:9000/
+      - PORT=8080
+    # links:
+    #   - manager
+    # ports:
+      # - "8000:8000"
+    networks:
+      my-intercom-network:
+        ipv4_address: 172.27.0.4
+
+  mongo:
+    image: mongo:7
+    environment:
+     - MONGO_INITDB_DATABASE=intercom-manager
+    networks:
+      my-intercom-network:
+        ipv4_address: 172.27.0.5
+
+  smb:
+    image: ubuntu:20.04
+    environment:
+     - DEBIAN_FRONTEND=noninteractive
+    ports:
+      - "10000:10000/udp"
+      - "10006:10006/udp"
+      - "4443:4443"
+      - "8080:8080"
+# -v $PWD/finos-rtc-smb_2.1.0-266.deb:/home/intercom/finos-rtc-smb_2.1.0-266.deb \
+# -v $PWD/config.json:/tmp/config.json \
+    privileged: true
+    volumes:
+      - ./debs/finos-rtc-smb_2.1.0-266.deb:/home/intercom/finos-rtc-smb_2.1.0-266.deb
+      - ./config.json:/tmp/config.json
+    command: sh -c "apt update && apt-get install -y iptables iputils-ping vim curl libcap2-bin libssl1.1 libc++-dev libc++abi-dev libsrtp2-1 libmicrohttpd12 libopus0 && dpkg -i /home/intercom/finos-rtc-smb_2.1.0-266.deb && smb /tmp/config.json"
+    # command: sh -c "apt update && apt-get install -y iptables iputils-ping vim curl libcap2-bin libssl1.1 libc++-dev libc++abi-dev libsrtp2-1 libmicrohttpd12 libopus0 && dpkg -i /home/intercom/finos-rtc-smb_2.1.0-266.deb && echo 1 && whereis smb&& ls -la /usr/bin/smb && chmod +x /usr/bin/smb && /usr/bin/smb"
+    # command: sh -c "apt update && apt-get install -y iptables iputils-ping vim curl libcap2-bin libssl1.1 libc++-dev libc++abi-dev libsrtp2-1 libmicrohttpd12 libopus0 && dpkg -i /home/intercom/finos-rtc-smb_2.1.0-266.deb && tail -f /dev/null"
+    networks:
+      my-intercom-network:
+        ipv4_address: 172.27.0.2
+  
+  nginx:
+    image: nginx
+    networks:
+      my-intercom-network:
+        ipv4_address: 172.27.0.6
+    ports:
+      - 443:443
+      - 80:80
+    volumes:
+      - ./certs:/etc/nginx/ssl
+      - ./nginx.conf:/etc/nginx/nginx.conf

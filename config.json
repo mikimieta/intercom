@@ -1,0 +1,23 @@
+{
+    "port": 8081,
+    "logStdOut": true,
+    "logLevel": "DEBUG",
+    "logFile": "/tmp/smb.log",
+    "defaultLastN": 5,
+    "ice": {
+        "enableIpv6": false,
+        "useAwsInfo": false,
+        "singlePort": 10000,
+        "publicIpv4": "192.168.2.106",
+        "publicIpv6": "",
+        "udpPortRangeLow": 10006,
+        "udpPortRangeHigh": 26000,
+        "tcp": {
+            "enable": false,
+            "port": 8080
+        }
+    },
+    "ice.publicIpv4": "192.168.2.106",
+    "ice.tcp.enable": true,
+    "ice.tcp.port": 8080
+}
